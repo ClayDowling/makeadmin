@@ -1,0 +1,8 @@
+// config.h
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
+
+#define MAKEADMIN_VERSION_MAJOR @makeadmin_VERSION_MAJOR@
+#define MAKEADMIN_VERSION_MINOR @makeadmin_VERSION_MINOR@
+
+#endif
