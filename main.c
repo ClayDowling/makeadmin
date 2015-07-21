@@ -19,11 +19,13 @@ int main(int argc, char **argv)
     struct sqlite3_stmt *user_query;
     struct sqlite3_stmt *group_query;
     struct sqlite3_stmt *ug_update;
+    struct sqlite3_stmt *validate_query;
     int uid = 0;
     int gid = 0;
     char *animal = NULL;
     char *user = NULL;
     char *database = NULL;
+    const char *group = NULL;
     int ch;
 
     while((ch = getopt(argc, argv, "d:u:a:")) != -1) {
@@ -57,6 +59,10 @@ int main(int argc, char **argv)
         goto oops;
     if (sqlite3_prepare_v2(db, "INSERT INTO usergroup (uid, gid, animal) VALUES (?, ?, ?)", -1, &ug_update, NULL) != SQLITE_OK)
         goto oops;
+    if (sqlite3_prepare_v2(db, "SELECT groups.name FROM groups\n"
+                           "JOIN usergroup ON groups.gid = usergroup.gid\n"
+                           "WHERE usergroup.uid = ? AND usergroup.animal = ?", -1, &validate_query, NULL) != SQLITE_OK)
+        goto oops;
 
     sqlite3_bind_text(user_query, 1, user, -1, SQLITE_STATIC);
 
@@ -74,19 +80,28 @@ int main(int argc, char **argv)
     gid = sqlite3_column_int(group_query, 1);
     sqlite3_finalize(group_query);
 
-    sqlite3_bind_int(ug_update, 1, uid);
-    sqlite3_bind_int(ug_update, 2, gid);
-    sqlite3_bind_text(ug_update, 3, animal, -1, SQLITE_STATIC);
+    if (sqlite3_bind_int(ug_update, 1, uid) != SQLITE_OK) goto oops;
+    if (sqlite3_bind_int(ug_update, 2, gid) != SQLITE_OK) goto oops;
+    if (sqlite3_bind_text(ug_update, 3, animal, -1, SQLITE_STATIC) != SQLITE_OK) goto oops;
     if (sqlite3_step(ug_update) != SQLITE_DONE)
         goto oops;
     sqlite3_finalize(ug_update);
+
+    sqlite3_bind_int(validate_query, 1, uid);
+    sqlite3_bind_text(validate_query, 2, animal, -1, SQLITE_STATIC);
+    printf("User %s has the following groups on %s:\n", user, animal);
+    while(sqlite3_step(validate_query) != SQLITE_DONE) {
+        group = sqlite3_column_text(validate_query, 1);
+        printf("  %s\n", group);
+    }
+    sqlite3_finalize(validate_query);
 
     sqlite3_close(db);
 
     return EXIT_SUCCESS;
 
 oops:
-    fprintf(stderr, "%s", sqlite3_errmsg(db));
+    fprintf(stderr, "%s\n", sqlite3_errmsg(db));
     if (NULL != db) {
         sqlite3_close(db);
     }
