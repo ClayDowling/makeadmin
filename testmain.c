@@ -184,6 +184,24 @@ void test_user_group_add_fails_for_invalid_user(CuTest *tc)
     teardown();
 }
 
+void test_user_groups_retrieves_users_groups(CuTest *tc)
+{
+    char **groups;
+    setup();
+
+    groups = user_get_groups("bob", "first");
+    CuAssertPtrNotNull(tc, groups);
+    CuAssertStrEquals(tc, "admin", groups[0]);
+    CuAssertStrEquals(tc, "user", groups[1]);
+
+    /* This assertion ensures that groups come from a single
+     * animal.
+     */
+    CuAssertPtrEquals(tc, NULL, groups[2]);
+
+    teardown();
+}
+
 int main(int argc, char **argv)
 {
     CuString *output = CuStringNew();
@@ -197,6 +215,7 @@ int main(int argc, char **argv)
     SUITE_ADD_TEST(suite, test_user_is_in_group_false_when_user_not_in_group);
     SUITE_ADD_TEST(suite, test_user_group_add_succeeds_for_valid_user_group);
     SUITE_ADD_TEST(suite, test_user_group_add_fails_for_invalid_user);
+    SUITE_ADD_TEST(suite, test_user_groups_retrieves_users_groups);
 
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);

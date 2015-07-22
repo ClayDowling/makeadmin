@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "user.h"
 
@@ -123,3 +124,56 @@ ingroupoops:
     return 0;
 }
 
+char** user_get_groups(const char *login, const char *animal)
+{
+    char **groups = NULL;
+    struct sqlite3_stmt *query;
+    int uid;
+    int count;
+    int i;
+
+    uid = user_get_uid(login, animal);
+
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(groups.name) FROM groups\n"
+                           "JOIN usergroup ON usergroup.gid = groups.gid\n"
+                           "WHERE usergroup.uid=? AND usergroup.animal=?", -1, &query, NULL) != SQLITE_OK) {
+        goto groupsoops;
+    }
+    if (sqlite3_bind_int(query, 1, uid) != SQLITE_OK) {
+        goto groupsoops;
+    }
+    if (sqlite3_bind_text(query, 2, animal, -1, SQLITE_STATIC) != SQLITE_OK) {
+        goto groupsoops;
+    }
+    if (sqlite3_step(query) != SQLITE_ROW) {
+        goto groupsoops;
+    }
+    count = sqlite3_column_int(query, 0);
+    groups = (char**)calloc(count + 1, sizeof(char*));
+
+    sqlite3_reset(query);
+    if (sqlite3_prepare_v2(db, "SELECT groups.name FROM groups\n"
+                           "JOIN usergroup ON usergroup.gid = groups.gid\n"
+                           "WHERE usergroup.uid=? AND usergroup.animal=?", -1, &query, NULL) != SQLITE_OK) {
+        goto groupsoops;
+    }
+    if (sqlite3_bind_int(query, 1, uid) != SQLITE_OK) {
+        goto groupsoops;
+    }
+    if (sqlite3_bind_text(query, 2, animal, -1, SQLITE_STATIC) != SQLITE_OK) {
+        goto groupsoops;
+    }
+
+    while(sqlite3_step(query) == SQLITE_ROW) {
+        groups[i] = strdup(sqlite3_column_text(query, 0));
+        printf("group: %s\n", groups[i]);
+        ++i;
+    }
+    sqlite3_finalize(query);
+
+    return groups;
+
+groupsoops:
+    fprintf(stderr, "%s: %s\n", __func__, sqlite3_errmsg(db));
+    return NULL;
+}

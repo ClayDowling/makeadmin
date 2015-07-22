@@ -19,15 +19,15 @@ void help(const char *program)
 int main(int argc, char **argv)
 {
     struct sqlite3_stmt *validate_query;
-    int uid = 0;
-    int gid = 0;
+    int i = 0;
     char *animal = NULL;
     char *user = NULL;
     char *database = NULL;
-    const char *group = NULL;
+    const char *group = "admin";
+    char **groups;
     int ch;
 
-    while((ch = getopt(argc, argv, "d:u:a:")) != -1) {
+    while((ch = getopt(argc, argv, "d:u:a:g:")) != -1) {
         switch(ch) {
         case 'd':
             database = optarg;
@@ -37,6 +37,9 @@ int main(int argc, char **argv)
             break;
         case 'a':
             animal = optarg;
+            break;
+        case 'g':
+            group = optarg;
             break;
         default:
             help(argv[0]);
@@ -52,26 +55,17 @@ int main(int argc, char **argv)
     if (sqlite3_open(database, &db) != SQLITE_OK)
         goto oops;
 
-    user_set_group(user, "admin", animal);
-    if (user_is_in_group(user, "admin", animal) == 0) {
-        fprintf(stderr, "Failed to add %s to admin in %s.\n", user, animal);
+    user_set_group(user, group, animal);
+    if (user_is_in_group(user, group, animal) == 0) {
+        fprintf(stderr, "Failed to add %s to %s in %s.\n", user, group, animal);
     }
 
-    if (sqlite3_prepare_v2(db, "SELECT groups.name FROM groups\n"
-                           "JOIN usergroup ON groups.gid = usergroup.gid\n"
-                           "WHERE usergroup.uid = ? AND usergroup.animal = ?", -1, &validate_query, NULL) != SQLITE_OK)
-        goto oops;
+    groups = user_get_groups(user, animal);
 
-    uid = user_get_uid(user, animal);
-    sqlite3_bind_int(validate_query, 1, uid);
-    sqlite3_bind_text(validate_query, 2, animal, -1, SQLITE_STATIC);
     printf("User %s has the following groups on %s:\n", user, animal);
-    while(sqlite3_step(validate_query) == SQLITE_ROW) {
-        group = sqlite3_column_text(validate_query, 0);
-        printf("  %s\n", group);
+    for(i=0; groups[i]; ++i) {
+        printf("  %s\n", groups[i]);
     }
-    sqlite3_finalize(validate_query);
-
     sqlite3_close(db);
 
     return EXIT_SUCCESS;
