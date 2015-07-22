@@ -16,14 +16,29 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 set(APP_SOURCES
 	main.c
-	sqlite3.c
-	sqlite3ext.h
-	sqlite3.h
+)
+
+set(CORE_SOURCES
+    sqlite3.c
+    sqlite3ext.h
+    sqlite3.h
+    user.c
+    user.h
+)
+
+set(TEST_SOURCES
+    testmain.c
+    CuTest.h
+    CuTest.c
 )
 
 IF(CMAKE_SYSTEM MATCHES "Linux.*")
   set(PLATFORM_LIBS dl)
 ENDIF(CMAKE_SYSTEM MATCHES "Linux.*")
 
-add_executable(makeadmin ${APP_SOURCES})
+add_executable(makeadmin ${APP_SOURCES} ${CORE_SOURCES})
 target_link_libraries(makeadmin ${CMAKE_THREAD_LIBS_INIT} ${PLATFORM_LIBS})
+
+add_executable(usertest ${CORE_SOURCES} ${TEST_SOURCES})
+target_link_libraries(usertest ${CMAKE_THREAD_LIBS_INIT} ${PLATFORM_LIBS})
+add_test(UnitTest ./usertest)
