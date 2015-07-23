@@ -61,12 +61,12 @@ int main(int argc, char **argv)
     }
 
     groups = user_get_groups(user, animal);
-
+    sqlite3_close(db);
     printf("User %s has the following groups on %s:\n", user, animal);
+
     for(i=0; groups[i]; ++i) {
         printf("  %s\n", groups[i]);
     }
-    sqlite3_close(db);
 
     return EXIT_SUCCESS;
 

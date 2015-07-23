@@ -164,9 +164,9 @@ char** user_get_groups(const char *login, const char *animal)
         goto groupsoops;
     }
 
+    i = 0;
     while(sqlite3_step(query) == SQLITE_ROW) {
         groups[i] = strdup(sqlite3_column_text(query, 0));
-        printf("group: %s\n", groups[i]);
         ++i;
     }
     sqlite3_finalize(query);
