@@ -107,7 +107,7 @@ void test_user_get_uid_retrieves_targetted_user(CuTest *tc)
     int uid;
 
     setup();
-    uid = user_get_uid("bob", "first");
+    uid = user_get_uid("bob");
     CuAssertIntEquals(tc, 1, uid);
     teardown();
 }
@@ -117,7 +117,7 @@ void test_user_get_uid_does_not_retrieve_invalid_user(CuTest *tc)
     int uid;
 
     setup();
-    uid = user_get_uid("noone", "first");
+    uid = user_get_uid("noone");
     CuAssertIntEquals(tc, -1, uid);
     teardown();
 }
@@ -224,6 +224,33 @@ void test_user_in_animal_returns_two_users_for_first_animal(CuTest *tc)
     teardown();
 }
 
+void test_user_get_record_returns_a_record(CuTest *tc)
+{
+    struct user_record *rec;
+
+    setup();
+
+    rec = user_get_record("tom");
+    CuAssertPtrNotNull(tc, rec);
+
+    teardown();
+}
+
+void test_user_get_record_returns_requested_user(CuTest *tc)
+{
+    struct user_record *rec;
+
+    setup();
+    rec = user_get_record("tom");
+    CuAssertIntEquals(tc, 2, rec->uid);
+    CuAssertStrEquals(tc, "tom", rec->login);
+    CuAssertStrEquals(tc, "$1$3$def", rec->password);
+    CuAssertStrEquals(tc, "Tom Jones", rec->name);
+    CuAssertStrEquals(tc, "tom@smith.us", rec->email);
+
+    teardown();
+}
+
 
 int main(int argc, char **argv)
 {
@@ -241,6 +268,8 @@ int main(int argc, char **argv)
     SUITE_ADD_TEST(suite, test_user_groups_retrieves_users_groups);
     SUITE_ADD_TEST(suite, test_users_in_animal_is_not_null);
     SUITE_ADD_TEST(suite, test_user_in_animal_returns_two_users_for_first_animal);
+    SUITE_ADD_TEST(suite, test_user_get_record_returns_a_record);
+    SUITE_ADD_TEST(suite, test_user_get_record_returns_requested_user);
 
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);

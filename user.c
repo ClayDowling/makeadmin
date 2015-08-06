@@ -4,7 +4,7 @@
 
 #include "user.h"
 
-int user_get_uid(const char *login, const char *animal)
+int user_get_uid(const char *login)
 {
     struct sqlite3_stmt *user_query;
     int uid = -1;
@@ -59,7 +59,7 @@ void user_set_group(const char *login, const char *group, const char *animal)
     int uid;
     int gid;
 
-    uid = user_get_uid(login, animal);
+    uid = user_get_uid(login);
     if (uid < 1) {
         fprintf(stderr, "%s: login %s not found.\n", __func__, login);
         return;
@@ -102,7 +102,7 @@ int user_is_in_group(const char *user, const char *group, const char *animal)
     int uid;
     int gid;
 
-    uid = user_get_uid(user, animal);
+    uid = user_get_uid(user);
     gid = user_get_group_gid(group, animal);
 
     if (sqlite3_prepare_v2(db, "SELECT * FROM usergroup WHERE uid=? AND gid=? AND animal=?", -1, &query, NULL) != SQLITE_OK)
@@ -132,7 +132,7 @@ char** user_get_groups(const char *login, const char *animal)
     int count;
     int i;
 
-    uid = user_get_uid(login, animal);
+    uid = user_get_uid(login);
 
     if (sqlite3_prepare_v2(db, "SELECT COUNT(groups.name) FROM groups\n"
                            "JOIN usergroup ON usergroup.gid = groups.gid\n"
@@ -223,6 +223,43 @@ char** users_in_animal(const char *animal)
 
     return users;
 inanimal_oops:
+    fprintf(stderr, "%s: %s\n\n", __func__, sqlite3_errmsg(db));
+    return NULL;
+}
+
+struct user_record* user_get_record(const char *login)
+{
+    struct user_record *rec = NULL;
+    sqlite3_stmt *query = NULL;
+    int uid;
+
+    rec = (struct user_record*)calloc(1, sizeof(struct user_record));
+    uid = user_get_uid(login);
+    if (uid <= 0) {
+        fprintf(stderr, "User %s not found.\n", login);
+        return NULL;
+    }
+    if (sqlite3_prepare_v2(db, "SELECT uid, login, pass, fullname, email FROM user WHERE uid=?",
+                           -1, &query, NULL) != SQLITE_OK) {
+        goto getrecordoops;
+    }
+    if (sqlite3_bind_int(query, 1, uid) != SQLITE_OK) {
+        goto getrecordoops;
+    }
+    if (sqlite3_step(query) != SQLITE_ROW) {
+        goto getrecordoops;
+    }
+
+    rec->uid = sqlite3_column_int(query, 0);
+    rec->login = strdup(sqlite3_column_text(query, 1));
+    rec->password = strdup(sqlite3_column_text(query, 2));
+    rec->name = strdup(sqlite3_column_text(query, 3));
+    rec->email = strdup(sqlite3_column_text(query, 4));
+    sqlite3_finalize(query);
+
+    return rec;
+
+getrecordoops:
     fprintf(stderr, "%s: %s\n\n", __func__, sqlite3_errmsg(db));
     return NULL;
 }

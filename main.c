@@ -10,19 +10,22 @@ struct sqlite3 *db = NULL;
 
 void help(const char *program)
 {
-    fprintf(stderr, "usage: %s -d database -a animal  [-u username][-g group][-l]\n"
+    fprintf(stderr, "usage: %s -d database -a animal  [-u username][-g group][-le]\n"
                     "makeadmin version %d.%d\n"
                     "\n"
                     "-d database       database file\n"
                     "-a animal         animal to modify/query\n"
                     "-u username       username to update\n"
                     "-g group          group to add\n"
-                    "-l                list users in animal\n", program,
+                    "-l                list users in animal\n"
+                    "-e                export users for authplain\n"
+                    "\n", program,
                     MAKEADMIN_VERSION_MAJOR,
                     MAKEADMIN_VERSION_MINOR);
 }
 
 int print_users_from_animal(const char *animal);
+int export_users_from_animal(const char *animal);
 int add_user_to_group(const char *user, const char *group, const char *animal);
 
 
@@ -34,7 +37,7 @@ int main(int argc, char **argv)
     const char *group = "admin";
     int ch;
     int result;
-    enum {ACT_ADDUSER, ACT_LISTANIMAL, ACT_MAX} action = ACT_ADDUSER;
+    enum {ACT_ADDUSER, ACT_LISTANIMAL, ACT_EXPORT, ACT_MAX} action = ACT_ADDUSER;
 
     while((ch = getopt(argc, argv, "d:u:a:g:l")) != -1) {
         switch(ch) {
@@ -52,6 +55,9 @@ int main(int argc, char **argv)
             break;
         case 'l':
             action = ACT_LISTANIMAL;
+            break;
+        case 'e':
+            action = ACT_EXPORT;
             break;
         default:
             help(argv[0]);
@@ -73,6 +79,9 @@ int main(int argc, char **argv)
         break;
     case ACT_LISTANIMAL:
         result = print_users_from_animal(animal);
+        break;
+    case ACT_EXPORT:
+        result = export_users_from_animal(animal);
         break;
     }
 
@@ -138,6 +147,14 @@ int add_user_to_group(const char *user, const char *group,  const char *animal)
     for(i=0; groups[i]; ++i) {
         printf("  %s\n", groups[i]);
     }
+
+    return EXIT_SUCCESS;
+}
+
+int export_users_from_animal(const char *animal)
+{
+    char **users;
+    users = users_in_animal(animal);
 
     return EXIT_SUCCESS;
 }
