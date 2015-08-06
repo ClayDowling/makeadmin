@@ -177,3 +177,53 @@ groupsoops:
     fprintf(stderr, "%s: %s\n", __func__, sqlite3_errmsg(db));
     return NULL;
 }
+
+char** users_in_animal(const char *animal)
+{
+    char **users = NULL;
+    sqlite3_stmt *query = NULL;
+    int count;
+    int i;
+
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM (\n"
+                               "SELECT DISTINCT login FROM user\n"
+                               "JOIN usergroup ug ON ug.uid = user.uid \n"
+                               "JOIN groups ON groups.gid = ug.gid\n"
+                               "WHERE ug.animal=?\n"
+                               "ORDER BY user.login)", -1, &query, NULL) != SQLITE_OK) {
+        goto inanimal_oops;
+    }
+    if (sqlite3_bind_text(query, 1, animal, -1, SQLITE_STATIC) != SQLITE_OK) {
+        goto inanimal_oops;
+    }
+    if (sqlite3_step(query) != SQLITE_ROW) {
+        goto inanimal_oops;
+    }
+    count = sqlite3_column_int(query, 0);
+    users = (char**)calloc(count + 1, sizeof(char*));
+    sqlite3_reset(query);
+
+    if (sqlite3_prepare_v2(db, "SELECT DISTINCT login FROM user\n"
+                               "JOIN usergroup ug ON ug.uid = user.uid \n"
+                               "JOIN groups ON groups.gid = ug.gid\n"
+                               "WHERE ug.animal=?\n"
+                               "ORDER BY user.login", -1, &query, NULL) != SQLITE_OK) {
+        goto inanimal_oops;
+    }
+    if (sqlite3_bind_text(query, 1, animal, -1, SQLITE_STATIC) != SQLITE_OK) {
+        goto inanimal_oops;
+    }
+
+    i = 0;
+    while(sqlite3_step(query) == SQLITE_ROW) {
+        users[i] = strdup(sqlite3_column_text(query, 0));
+        ++i;
+    }
+    sqlite3_finalize(query);
+
+    return users;
+inanimal_oops:
+    fprintf(stderr, "%s: %s\n\n", __func__, sqlite3_errmsg(db));
+    return NULL;
+}
+

@@ -202,6 +202,29 @@ void test_user_groups_retrieves_users_groups(CuTest *tc)
     teardown();
 }
 
+void test_users_in_animal_is_not_null(CuTest *tc)
+{
+    char **users;
+
+    setup();
+    users = users_in_animal("first");
+    CuAssertPtrNotNull(tc, users);
+    teardown();
+}
+
+void test_user_in_animal_returns_two_users_for_first_animal(CuTest *tc)
+{
+    char **users;
+
+    setup();
+    users = users_in_animal("first");
+    CuAssertPtrNotNull(tc, users[0]);
+    CuAssertPtrNotNull(tc, users[1]);
+    CuAssertPtrEquals(tc, NULL, users[2]);
+    teardown();
+}
+
+
 int main(int argc, char **argv)
 {
     CuString *output = CuStringNew();
@@ -216,6 +239,8 @@ int main(int argc, char **argv)
     SUITE_ADD_TEST(suite, test_user_group_add_succeeds_for_valid_user_group);
     SUITE_ADD_TEST(suite, test_user_group_add_fails_for_invalid_user);
     SUITE_ADD_TEST(suite, test_user_groups_retrieves_users_groups);
+    SUITE_ADD_TEST(suite, test_users_in_animal_is_not_null);
+    SUITE_ADD_TEST(suite, test_user_in_animal_returns_two_users_for_first_animal);
 
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
