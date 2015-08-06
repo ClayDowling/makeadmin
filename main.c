@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     int result;
     enum {ACT_ADDUSER, ACT_LISTANIMAL, ACT_EXPORT, ACT_MAX} action = ACT_ADDUSER;
 
-    while((ch = getopt(argc, argv, "d:u:a:g:l")) != -1) {
+    while((ch = getopt(argc, argv, "d:u:a:g:el")) != -1) {
         switch(ch) {
         case 'd':
             database = optarg;
@@ -154,7 +154,47 @@ int add_user_to_group(const char *user, const char *group,  const char *animal)
 int export_users_from_animal(const char *animal)
 {
     char **users;
+    char *user;
+    char **groups;
+    char *group;
+    struct user_record *rec;
+    int i;
+    int j;
+
     users = users_in_animal(animal);
+
+    users = users_in_animal(animal);
+    if (NULL == users) {
+        return EXIT_FAILURE;
+    }
+
+    puts("# users.auth.php\n"
+         "# <?php exit()?>\n"
+         "# Don't modify the lines above\n"
+         "#\n"
+         "# Userfile\n"
+         "#\n"
+         "# Format:\n"
+         "#\n"
+         "# login:passwordhash:Real Name:email:groups,comma,seperated\n");
+
+    for(i=0; users[i]; ++i) {
+        user = users[i];
+        groups = user_get_groups(user, animal);
+        if (NULL == groups) {
+            continue;
+        }
+        rec = user_get_record(user);
+        printf("%s:%s:%s:%s:", rec->login, rec->password, rec->name, rec->email);
+        for(j=0; groups[j]; ++j) {
+            group = groups[j];
+            if (0==j)
+                printf("%s", group);
+            else
+                printf(",%s", group);
+        }
+        printf("\n");
+    }
 
     return EXIT_SUCCESS;
 }
